@@ -1,11 +1,12 @@
 from django.urls import path
 from django.contrib.auth import views as auth_views
 from . import views
+from .views import send_reminders
 
 urlpatterns = [
     path('', views.home, name='home'),
     path('about/', views.about, name='about'),
-    
+    path("api/send-reminders", send_reminders, name="send_reminders"),
     path('feedbacks/', views.feedback_list, name='feedback_list'),
 
     path('register/', views.register_view, name='register'),

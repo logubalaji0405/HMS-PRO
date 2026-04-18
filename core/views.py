@@ -8,6 +8,12 @@ from django.views.decorators.http import require_GET, require_POST
 from django.http import JsonResponse, HttpResponseForbidden
 
 from .models import Profile, Appointment, ChatMessage, ChatRoom, Feedback
+from datetime import timedelta, datetime
+from django.http import JsonResponse, HttpResponseForbidden
+from django.utils import timezone
+from django.core.mail import send_mail
+
+import os
 
 
 def home(request):
@@ -526,4 +532,42 @@ def feedback_list(request):
     feedbacks = Feedback.objects.select_related('patient').order_by('-created_at')
     return render(request, 'feedback_list.html', {'feedbacks': feedbacks})
 
-    
+def send_reminders(request):
+    cron_secret = os.environ.get("CRON_SECRET")
+    if request.headers.get("Authorization") != f"Bearer {cron_secret}":
+        return HttpResponseForbidden("Unauthorized")
+
+    now = timezone.localtime()
+    target_start = now + timedelta(minutes=29)
+    target_end = now + timedelta(minutes=31)
+
+    appointments = Appointment.objects.filter(
+        reminder_sent=False,
+        appointment_date__gte=target_start.date(),
+        appointment_date__lte=target_end.date(),
+    )
+
+    sent_count = 0
+
+    for appt in appointments:
+        subject = "Appointment Reminder"
+        message = (
+            f"Hello {appt.patient.username},\n\n"
+            f"This is a reminder for your appointment with {appt.doctor_name} "
+            f"on {appt.appointment_date} at {appt.appointment_time}.\n\n"
+            f"Thank you."
+        )
+
+        send_mail(
+            subject,
+            message,
+            None,
+            [appt.email],
+            fail_silently=False,
+        )
+
+        appt.reminder_sent = True
+        appt.save(update_fields=["reminder_sent"])
+        sent_count += 1
+
+    return JsonResponse({"status": "ok", "sent": sent_count})
