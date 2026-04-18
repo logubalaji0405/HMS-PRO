@@ -12,7 +12,7 @@ from datetime import timedelta, datetime
 from django.http import JsonResponse, HttpResponseForbidden
 from django.utils import timezone
 from django.core.mail import send_mail
-
+from .utils import send_reminder_email
 import os
 
 
@@ -534,40 +534,54 @@ def feedback_list(request):
 
 def send_reminders(request):
     cron_secret = os.environ.get("CRON_SECRET")
-    if request.headers.get("Authorization") != f"Bearer {cron_secret}":
+    auth_header = request.headers.get("Authorization")
+
+    if auth_header != f"Bearer {cron_secret}":
         return HttpResponseForbidden("Unauthorized")
 
     now = timezone.localtime()
-    target_start = now + timedelta(minutes=5)
-    target_end = now + timedelta(minutes=6)
+    target_start = now + timedelta(minutes=9)
+    target_end = now + timedelta(minutes=12)
 
     appointments = Appointment.objects.filter(
+        status="confirmed",
         reminder_sent=False,
-        appointment_date__gte=target_start.date(),
-        appointment_date__lte=target_end.date(),
-    )
+    ).select_related("patient", "doctor")
 
     sent_count = 0
+    checked_count = 0
+    matched_count = 0
+    errors = []
 
-    for appt in appointments:
-        subject = "Appointment Reminder"
-        message = (
-            f"Hello {appt.patient.username},\n\n"
-            f"This is a reminder for your appointment with {appt.doctor_name} "
-            f"on {appt.appointment_date} at {appt.appointment_time}.\n\n"
-            f"Thank you."
+    for appointment in appointments:
+        checked_count += 1
+
+        appointment_datetime = datetime.combine(
+            appointment.appointment_date,
+            appointment.appointment_time,
         )
 
-        send_mail(
-            subject,
-            message,
-            None,
-            [appt.email],
-            fail_silently=False,
-        )
+        if timezone.is_naive(appointment_datetime):
+            appointment_datetime = timezone.make_aware(
+                appointment_datetime,
+                timezone.get_current_timezone(),
+            )
 
-        appt.reminder_sent = True
-        appt.save(update_fields=["reminder_sent"])
-        sent_count += 1
+        if target_start <= appointment_datetime <= target_end:
+            matched_count += 1
+            try:
+                ok = send_reminder_email(appointment)
+                if ok:
+                    appointment.reminder_sent = True
+                    appointment.save(update_fields=["reminder_sent"])
+                    sent_count += 1
+            except Exception as e:
+                errors.append(f"Appointment #{appointment.id}: {str(e)}")
 
-    return JsonResponse({"status": "ok", "sent": sent_count})
+    return JsonResponse({
+        "status": "ok",
+        "checked": checked_count,
+        "matched": matched_count,
+        "sent": sent_count,
+        "errors": errors,
+    })
