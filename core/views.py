@@ -538,8 +538,8 @@ def send_reminders(request):
         return HttpResponseForbidden("Unauthorized")
 
     now = timezone.localtime()
-    target_start = now + timedelta(minutes=29)
-    target_end = now + timedelta(minutes=31)
+    target_start = now + timedelta(minutes=5)
+    target_end = now + timedelta(minutes=6)
 
     appointments = Appointment.objects.filter(
         reminder_sent=False,
