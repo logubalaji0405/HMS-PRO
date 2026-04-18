@@ -4,3 +4,5 @@ whitenoise==6.12.0
 pillow==12.1.1
 qrcode==8.2
 reportlab==4.4.10
+dj-database-url
+psycopg2-binary
