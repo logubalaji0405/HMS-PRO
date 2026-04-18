@@ -7,9 +7,9 @@ import dj_database_url
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-w=27^x_&og^&rhkbaxyeiapv@s)6h%ykz!qquo-+&k(2*ep%ic'
-DEBUG = True
-ALLOWED_HOSTS = ["your-project.vercel.app", ".vercel.app", "127.0.0.1", "localhost"]
-CSRF_TRUSTED_ORIGINS = ["https://your-project.vercel.app"]
+DEBUG = False
+ALLOWED_HOSTS = ["hms-pro-tau.vercel.app", ".vercel.app", "127.0.0.1", "localhost"]
+CSRF_TRUSTED_ORIGINS = ["https://hms-pro-tau.vercel.app"]
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -81,14 +81,12 @@ LOGOUT_REDIRECT_URL = 'login'
 
 
 
-
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = "smtp.gmail.com"
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = "balabalajibala512@gmail.com"
-EMAIL_HOST_PASSWORD = os.environ.get("vqrwzshkvlpejhhh")
+EMAIL_HOST_PASSWORD = os.environ.get('vqrwzshkvlpejhhh')
 DEFAULT_FROM_EMAIL = "Healix HMS <balabalajibala512@gmail.com>"
-
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
